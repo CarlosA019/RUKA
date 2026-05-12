@@ -1,5 +1,24 @@
+[build-system]
+requires = ["uv_build>=0.9.15"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""
+
+[tool.uv.extra-build-dependencies]
+ruka_hand = ["uv_build"]
+
+[tool.uv.workspace]
+members = [
+    ".",
+]
+
+[tool.uv.sources]
+ruka-hand = { workspace = true, editable = true }
+
+
 [project]
-name = "ruka"
+name = "ruka_hand"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -32,4 +51,9 @@ dependencies = [
     "tqdm>=4.67.3",
     "wandb>=0.26.1",
     "zmq>=0.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruka-hand",
 ]

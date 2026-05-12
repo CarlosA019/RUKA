@@ -5373,9 +5373,9 @@ wheels = [
 ]
 
 [[package]]
-name = "ruka"
+name = "ruka-hand"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "blosc" },
     { name = "bs4" },
@@ -5409,6 +5409,11 @@ dependencies = [
     { name = "zmq" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "ruka-hand" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "blosc", specifier = ">=1.11.4" },
@@ -5439,6 +5444,9 @@ requires-dist = [
     { name = "wandb", specifier = ">=0.26.1" },
     { name = "zmq", specifier = ">=0.0.0" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "ruka-hand", editable = "." }]
 
 [[package]]
 name = "scikit-learn"
