@@ -216,7 +216,7 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
     repo_root = get_repo_root()
-    save_dir = f"{repo_root}/curl_limits"
+    save_dir = f"{repo_root}/motor_limits"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 

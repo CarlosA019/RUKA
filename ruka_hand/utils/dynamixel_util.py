@@ -33,6 +33,8 @@ def dynamixel_cleanup_handler():
 
 def unsigned_to_signed(value: int, size: int) -> int:
     """Converts the given value from its unsigned representation."""
+    if value is None:
+        return None
     bit_size = 8 * size
     if (value & (1 << (bit_size - 1))) != 0:
         value = -((1 << bit_size) - value)
@@ -258,7 +260,7 @@ class DynamixelClient:
         errored_ids = []
         for motor_id, desired_pos in zip(motor_ids, values):
             value = int(desired_pos)
-            value = value.to_bytes(size, byteorder="little")
+            value = value.to_bytes(size, byteorder="little", signed=value < 0)
             success = sync_writer.addParam(motor_id, value)
             if not success:
                 errored_ids.append(motor_id)
@@ -319,12 +321,16 @@ class DynamixelClient:
     # Common read calls
 
     def read_pos(self):
-        return self.sync_read(
+        bulk_data = self.sync_read(
             self.motor_ids, ADDR_PRESENT_POSITION, LEN_PRESENT_POSITION
         )
+        return [unsigned_to_signed(value, LEN_PRESENT_POSITION) for value in bulk_data]
 
     def read_goal_pos(self):
-        return self.sync_read(self.motor_ids, ADDR_GOAL_POSITION, LEN_GOAL_POSITION)
+        bulk_data = self.sync_read(
+            self.motor_ids, ADDR_GOAL_POSITION, LEN_GOAL_POSITION
+        )
+        return [unsigned_to_signed(value, LEN_GOAL_POSITION) for value in bulk_data]
 
     def read_cur(self):
         bulk_data = self.sync_read(
@@ -337,9 +343,10 @@ class DynamixelClient:
         return bulk_data
 
     def read_vel(self):
-        return self.sync_read(
+        bulk_data = self.sync_read(
             self.motor_ids, ADDR_PRESENT_VELOCITY, LEN_PRESENT_VELOCITY
         )
+        return [unsigned_to_signed(value, LEN_PRESENT_VELOCITY) for value in bulk_data]
 
     # Common write calls
 

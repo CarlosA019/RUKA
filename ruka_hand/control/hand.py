@@ -41,7 +41,7 @@ class Hand:
 
         # Paramaters for initalization
         self.hand_type = hand_type
-        self.curr_lim = 700
+        self.curr_lim = 400
         self.temp_lim = 60
         self.goal_velocity = 400
         self.operating_mode = 5  # 5: current-based position control
@@ -67,7 +67,7 @@ class Hand:
                     f"{repo_root}/motor_limits/left_curl_limits.npy"
                 )
             else:
-                self.curled_bound = 4000 - np.ones(11) * MOTOR_RANGES_LEFT
+                self.curled_bound = 2000 - np.ones(11) * MOTOR_RANGES_LEFT
             tens_path = f"{repo_root}/motor_limits/left_tension_limits.npy"
             if os.path.exists(tens_path):
                 self.tensioned_pos = np.load(tens_path)
@@ -100,7 +100,7 @@ class Hand:
         )  # Set Current limit
         self.dxl_client.sync_write(
             FINGER_NAMES_TO_MOTOR_IDS["Thumb"],
-            np.ones(len(motors)) * 700,
+            np.ones(len(motors)) * 400,
             ADDR_CURRENT_LIMIT,
             LEN_CURRENT_LIMIT,
         )  # Set thumb specific current limit
