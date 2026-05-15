@@ -152,7 +152,7 @@ class Hand:
         )  # Set D gain for MCP motors
 
         # Enable Torque
-        self.dxl_client.set_torque_enabled(True, -1, 0.05)
+        self.dxl_client.set_torque_enabled(True, 3, 0.05)
 
         # self.dxl_client.set_pos(self.init_pos)
 

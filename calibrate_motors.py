@@ -157,12 +157,65 @@ class HandCalibrator:
         print("Final tensioned array:\n", tensioned)
         return tensioned.astype(int)
 
-    def save_curled_limits(self):
-        curled = self.find_curled()
+    def interactive_refine_curled(self, curled_init, step=10):
+        """
+        Iterate through motors; arrows adjust raw motor position by step.
+        Enter confirms & advances.
+        """
+        current_pos = np.array(self.hand.read_pos())
+        curled = curled_init.copy()
+
+        print("\n--- Curl Calibration ---")
+        print("Use arrows to adjust raw motor position (±10). Press Enter to confirm motor.")
+        print("Stop increasing as soon as the finger looks correctly curled.\n")
+
+        for mid in self.motor_ids:
+            idx = mid - 1
+            pos = current_pos.copy()
+            pos[idx] = curled[idx]
+            self.hand.set_pos(pos)
+            time.sleep(0.2)
+
+            while True:
+                print(f"[Motor {mid}] Current candidate: {pos[idx]}")
+                print("Up/Right: +step, Down/Left: -step, Enter to save, 'q' to keep current.")
+
+                k = get_key()
+
+                if k in ("\r", "\n"):
+                    curled[idx] = int(pos[idx])
+                    print(f"Saved Motor {mid} curled = {curled[idx]}\n")
+                    break
+                elif k in ("\x1b[A", "\x1b[C"):
+                    pos[idx] = max(min(pos[idx] + step, 4090), 10)
+                    self.hand.set_pos(pos)
+                elif k in ("\x1b[B", "\x1b[D"):
+                    pos[idx] = max(min(pos[idx] - step, 4090), 10)
+                    self.hand.set_pos(pos)
+                elif k.lower() == "q":
+                    curled[idx] = int(pos[idx])
+                    print(f"Keeping Motor {mid} curled = {curled[idx]}\n")
+                    break
+                else:
+                    pass
+
+        print("Final curled array:\n", curled)
+        return curled.astype(int)
+
+    def save_curled_limits(self, manual=False, step=10):
+        if manual:
+            if os.path.exists(self.curled_path):
+                curled = np.load(self.curled_path)
+            else:
+                print("Curled limits not found; using current motor positions as the starting point.")
+                curled = np.array(self.hand.read_pos(), dtype=int)
+            curled = self.interactive_refine_curled(curled, step=step)
+        else:
+            curled = self.find_curled()
         np.save(self.curled_path, curled)
         print(f"Saved curled limits to {self.curled_path}")
 
-    def save_tensioned_limits(self):
+    def save_tensioned_limits(self, step=10):
         """
         Runs the interactive tension pass.
         Requires curled to exist (either just measured or previously saved).
@@ -176,7 +229,7 @@ class HandCalibrator:
             print(f"Saved curled limits to {self.curled_path}")
 
         t_init = self.estimate_tensioned_from_curled(curled)
-        t_refined = self.interactive_refine_tensioned(t_init, step=10)
+        t_refined = self.interactive_refine_tensioned(t_init, step=step)
         np.save(self.tension_path, t_refined)
         print(f"Saved tensioned limits to {self.tension_path}")
 
@@ -206,9 +259,15 @@ def parse_args():
         "-m",
         "--mode",
         type=str,
-        choices=["curl", "tension", "both"],
+        choices=["curl", "manual-curl", "tension", "both"],
         default="both",
-        help="Which calibration(s) to run: curled only, tension only, or both (default).",
+        help="Which calibration(s) to run: automatic curl, manual curl, tension, or both.",
+    )
+    parser.add_argument(
+        "--step",
+        type=int,
+        default=10,
+        help="Manual adjustment step size for curl/tension calibration.",
     )
     return parser.parse_args()
 
@@ -220,14 +279,21 @@ if __name__ == "__main__":
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    calibrator = HandCalibrator(
-        data_save_dir=save_dir,
-        hand_type=args.hand_type,
-        curr_lim=args.curr_lim,
-        testing=args.testing,
-    )
+    calibrator = None
+    try:
+        calibrator = HandCalibrator(
+            data_save_dir=save_dir,
+            hand_type=args.hand_type,
+            curr_lim=args.curr_lim,
+            testing=args.testing,
+        )
 
-    if args.mode in ("curl", "both"):
-        calibrator.save_curled_limits()
-    if args.mode in ("tension", "both"):
-        calibrator.save_tensioned_limits()
+        if args.mode in ("curl", "both"):
+            calibrator.save_curled_limits(step=args.step)
+        if args.mode == "manual-curl":
+            calibrator.save_curled_limits(manual=True, step=args.step)
+        if args.mode in ("tension", "both"):
+            calibrator.save_tensioned_limits(step=args.step)
+    finally:
+        if calibrator is not None:
+            calibrator.hand.close()

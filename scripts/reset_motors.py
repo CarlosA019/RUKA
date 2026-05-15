@@ -10,19 +10,14 @@ parser.add_argument(
     "--hand_type",
     type=str,
     help="Hand you'd like to teleoperate",
-    default="left",
+    default="right",
 )
 args = parser.parse_args()
 hand = Hand(args.hand_type)
-while True:
+try:
     curr_pos = hand.read_pos()
-    time.sleep(0.5)
     print(f"curr_pos: {curr_pos}, des_pos: {hand.tensioned_pos}")
-    test_pos = hand.tensioned_pos
-    try:
-        move_to_pos(curr_pos=curr_pos, des_pos=test_pos, hand=hand, traj_len=50)
-    except:
-        break
-
-
-hand.close()
+    move_to_pos(curr_pos=curr_pos, des_pos=hand.tensioned_pos, hand=hand, traj_len=50)
+    time.sleep(0.5)
+finally:
+    hand.close()

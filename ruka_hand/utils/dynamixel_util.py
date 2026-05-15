@@ -203,7 +203,7 @@ class DynamixelClient:
         remaining_ids = list(self.motor_ids)
         while remaining_ids:
 
-            for motor_id in remaining_ids:
+            for motor_id in list(remaining_ids):
 
                 dxl_comm_result, dxl_error = self.packet_handler.write1ByteTxRx(
                     self.port_handler, motor_id, ADDR_TORQUE_ENABLE, int(enabled)
@@ -229,7 +229,11 @@ class DynamixelClient:
                 )
 
             if retries == 0:
-                break
+                raise OSError(
+                    "Could not set torque {} for IDs: {}".format(
+                        "enabled" if enabled else "disabled", remaining_ids
+                    )
+                )
             time.sleep(retry_interval)
             retries -= 1
 
